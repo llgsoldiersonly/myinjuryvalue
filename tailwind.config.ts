@@ -21,6 +21,29 @@ const config: Config = {
       fontFamily: {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      keyframes: {
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
+        "shiny-shimmer": {
+          "0%, 90%, 100%": { "background-position": "calc(-100% - var(--shimmer-width)) 0" },
+          "30%, 60%": { "background-position": "calc(100% + var(--shimmer-width)) 0" },
+        },
+        "gradient-x": {
+          "0%, 100%": { "background-position": "0% 50%" },
+          "50%": { "background-position": "100% 50%" },
+        },
+        "border-beam": {
+          "100%": { "offset-distance": "100%" },
+        },
+      },
+      animation: {
+        marquee: "marquee var(--duration, 40s) linear infinite",
+        "shiny-shimmer": "shiny-shimmer 8s ease-in-out infinite",
+        "gradient-x": "gradient-x 6s ease infinite",
+        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+      },
     },
   },
   plugins: [],

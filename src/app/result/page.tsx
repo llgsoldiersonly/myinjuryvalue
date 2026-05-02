@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Logo, Tagline } from "@/components/Logo";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatUsd } from "@/lib/scoring";
+import { BorderBeam } from "@/components/magicui/BorderBeam";
+import { NumberTicker } from "@/components/magicui/NumberTicker";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +66,8 @@ export default async function ResultPage({
   }
 
   const copy = QUALITY_COPY[lead.lead_quality as string] ?? QUALITY_COPY.REVIEW;
-  const range = `${formatUsd(lead.value_min ?? 0)} – ${formatUsd(lead.value_max ?? 0)}`;
+  const valueMin = lead.value_min ?? 0;
+  const valueMax = lead.value_max ?? 0;
 
   return (
     <main className="min-h-screen bg-white">
@@ -81,13 +84,25 @@ export default async function ResultPage({
           </h1>
           <p className="mt-3 text-slate-600">{copy.sub}</p>
 
-          <div className="mt-8 bg-brand-navy text-white rounded-3xl p-8 md:p-10">
+          <div className="relative mt-8 bg-brand-navy text-white rounded-3xl p-8 md:p-10 overflow-hidden">
+            <BorderBeam size={220} duration={10} colorFrom="#1E5BFF" colorTo="#FFD60A" />
             <p className="text-sm uppercase tracking-widest text-brand-blueLight">
               Your range, {lead.first_name ?? "friend"}
             </p>
-            <p className="mt-3 text-3xl md:text-5xl font-extrabold">{range}</p>
+            <p className="mt-3 text-3xl md:text-5xl font-extrabold">
+              <span className="inline-flex items-baseline gap-1">
+                $<NumberTicker value={valueMin} />
+              </span>
+              <span className="px-2 text-slate-400">–</span>
+              <span className="inline-flex items-baseline gap-1">
+                $<NumberTicker value={valueMax} delay={0.2} />
+              </span>
+            </p>
             <p className="mt-3 text-slate-300 text-sm">
               Estimate based on your answers. Not a guarantee.
+            </p>
+            <p className="sr-only">
+              Range from {formatUsd(valueMin)} to {formatUsd(valueMax)}
             </p>
           </div>
 
