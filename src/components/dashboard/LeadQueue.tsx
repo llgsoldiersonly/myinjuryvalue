@@ -17,6 +17,15 @@ const STATUSES = [
   "new", "attempted", "contacted", "qualified", "disqualified", "signed", "sold", "lost",
 ];
 
+type SortKey =
+  | "priority"
+  | "created_at"
+  | "first_name"
+  | "state"
+  | "accident_type"
+  | "lead_quality"
+  | "status";
+
 export function LeadQueue({
   leads,
   initialFilters,
@@ -29,15 +38,43 @@ export function LeadQueue({
   const [quality, setQuality] = useState(initialFilters.quality ?? "");
   const [status, setStatus] = useState(initialFilters.status ?? "");
   const [state, setState] = useState(initialFilters.state ?? "");
+  const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
     return [...leads].sort((a, b) => {
-      const ra = QUALITY_RANK[(a.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
-      const rb = QUALITY_RANK[(b.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
-      if (ra !== rb) return ra - rb;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortKey === "priority") {
+        const ra = QUALITY_RANK[(a.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
+        const rb = QUALITY_RANK[(b.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
+        if (ra !== rb) return (ra - rb) * (sortDir === "desc" ? 1 : -1);
+        return (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) * (sortDir === "desc" ? 1 : -1);
+      }
+      if (sortKey === "lead_quality") {
+        const ra = QUALITY_RANK[(a.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
+        const rb = QUALITY_RANK[(b.lead_quality as LeadQuality) ?? "LOW"] ?? 99;
+        return (ra - rb) * dir * -1; // higher quality (lower rank) first when desc
+      }
+      if (sortKey === "created_at") {
+        return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      }
+      const av = (a[sortKey] ?? "").toString().toLowerCase();
+      const bv = (b[sortKey] ?? "").toString().toLowerCase();
+      return av < bv ? -1 * dir : av > bv ? 1 * dir : 0;
     });
-  }, [leads]);
+  }, [leads, sortKey, sortDir]);
+
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("desc"); }
+  }
+
+  async function deleteLead(id: string, name: string) {
+    if (!window.confirm(`Delete lead ${name}? This also removes their call history and notes.`)) return;
+    const res = await fetch(`/api/dashboard/leads/${id}`, { method: "DELETE" });
+    if (!res.ok) { alert(await res.text()); return; }
+    router.refresh();
+  }
 
   function applyFilters(next?: Partial<{ q: string; quality: string; status: string; state: string }>) {
     const merged = { q, quality, status, state, ...next };
@@ -122,7 +159,7 @@ export function LeadQueue({
               <div><span className="text-slate-500">Fault:</span> <span className="text-slate-200">{l.fault}</span></div>
               <div><span className="text-slate-500">Offer:</span> <span className="text-slate-200">{l.offer_amount || "—"}</span></div>
             </div>
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 flex-wrap">
               <ActionButton onClick={() => callLead(l.id)}>📞 Call</ActionButton>
               <ActionButton onClick={() => smsLead(l.id)}>SMS</ActionButton>
               <Link
@@ -131,6 +168,12 @@ export function LeadQueue({
               >
                 Details →
               </Link>
+              <button
+                onClick={() => deleteLead(l.id, `${l.first_name ?? ""} ${l.last_name ?? ""}`)}
+                className="text-xs px-2 py-1 rounded-md border border-red-500/30 text-red-300 hover:bg-red-500/10"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
@@ -144,18 +187,19 @@ export function LeadQueue({
         <table className="w-full text-sm">
           <thead className="bg-[#0F1626] text-slate-400">
             <tr className="text-left">
-              <Th>Created</Th>
-              <Th>Name</Th>
+              <SortTh active={sortKey} dir={sortDir} k="created_at" onClick={toggleSort}>Created</SortTh>
+              <SortTh active={sortKey} dir={sortDir} k="first_name" onClick={toggleSort}>Name</SortTh>
               <Th>Phone</Th>
-              <Th>State</Th>
-              <Th>Accident</Th>
+              <SortTh active={sortKey} dir={sortDir} k="state" onClick={toggleSort}>State</SortTh>
+              <SortTh active={sortKey} dir={sortDir} k="accident_type" onClick={toggleSort}>Accident</SortTh>
               <Th>Injury</Th>
               <Th>Treatment</Th>
               <Th>Fault</Th>
               <Th>Offer</Th>
               <Th>Attorney</Th>
-              <Th>Quality</Th>
-              <Th>Status</Th>
+              <SortTh active={sortKey} dir={sortDir} k="lead_quality" onClick={toggleSort}>Quality</SortTh>
+              <SortTh active={sortKey} dir={sortDir} k="status" onClick={toggleSort}>Status</SortTh>
+              <SortTh active={sortKey} dir={sortDir} k="priority" onClick={toggleSort}>Priority</SortTh>
               <Th>Actions</Th>
             </tr>
           </thead>
@@ -180,8 +224,9 @@ export function LeadQueue({
                 <Td className="max-w-[160px] truncate">{l.has_attorney}</Td>
                 <Td><QualityPill quality={l.lead_quality} /></Td>
                 <Td>{l.status}</Td>
+                <Td className="text-slate-500">{QUALITY_RANK[(l.lead_quality as LeadQuality) ?? "LOW"] ?? "—"}</Td>
                 <Td>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <ActionButton onClick={() => callLead(l.id)}>Call</ActionButton>
                     <ActionButton onClick={() => smsLead(l.id)}>SMS</ActionButton>
                     <Link
@@ -190,13 +235,19 @@ export function LeadQueue({
                     >
                       Details
                     </Link>
+                    <button
+                      onClick={() => deleteLead(l.id, `${l.first_name ?? ""} ${l.last_name ?? ""}`)}
+                      className="text-xs px-2 py-1 rounded-md border border-red-500/30 text-red-300 hover:bg-red-500/10"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </Td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={13} className="text-center py-10 text-slate-500">
+                <td colSpan={14} className="text-center py-10 text-slate-500">
                   No leads match these filters.
                 </td>
               </tr>
@@ -232,6 +283,33 @@ async function smsLead(id: string) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{children}</th>;
+}
+
+function SortTh({
+  active,
+  dir,
+  k,
+  onClick,
+  children,
+}: {
+  active: SortKey;
+  dir: "asc" | "desc";
+  k: SortKey;
+  onClick: (k: SortKey) => void;
+  children: React.ReactNode;
+}) {
+  const isActive = active === k;
+  return (
+    <th
+      onClick={() => onClick(k)}
+      className={`px-3 py-3 font-semibold text-xs uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${isActive ? "text-white" : "hover:text-slate-200"}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        <span className="text-[10px] text-slate-500">{isActive ? (dir === "asc" ? "▲" : "▼") : "↕"}</span>
+      </span>
+    </th>
+  );
 }
 
 function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {

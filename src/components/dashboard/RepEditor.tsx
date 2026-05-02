@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Rep {
@@ -19,6 +19,12 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [priority, setPriority] = useState(reps.length + 1);
+  const [order, setOrder] = useState<Rep[]>([]);
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOrder([...reps].sort((a, b) => a.priority_order - b.priority_order));
+  }, [reps]);
 
   async function add() {
     if (!name.trim() || !phone.trim()) return;
@@ -52,6 +58,55 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
     setBusy(false);
     if (!res.ok) alert(await res.text());
     else router.refresh();
+  }
+
+  async function persistOrder(next: Rep[]) {
+    setBusy(true);
+    // assign new priority_order = index+1, only PATCH the ones that changed
+    const updates = next
+      .map((r, i) => ({ id: r.id, priority_order: i + 1, before: r.priority_order }))
+      .filter((u) => u.priority_order !== u.before);
+    try {
+      await Promise.all(
+        updates.map((u) =>
+          fetch("/api/dashboard/reps", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: u.id, priority_order: u.priority_order }),
+          })
+        )
+      );
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onDragStart(id: string) { setDragId(id); }
+  function onDragOver(e: React.DragEvent, overId: string) {
+    e.preventDefault();
+    if (!dragId || dragId === overId) return;
+    const next = [...order];
+    const from = next.findIndex((r) => r.id === dragId);
+    const to = next.findIndex((r) => r.id === overId);
+    if (from < 0 || to < 0) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setOrder(next);
+  }
+  function onDrop() {
+    setDragId(null);
+    void persistOrder(order);
+  }
+
+  function move(id: string, dir: -1 | 1) {
+    const i = order.findIndex((r) => r.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    const next = [...order];
+    [next[i], next[j]] = [next[j], next[i]];
+    setOrder(next);
+    void persistOrder(next);
   }
 
   return (
@@ -89,47 +144,57 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/5">
-        <table className="w-full text-sm">
-          <thead className="bg-[#0F1626] text-slate-400">
-            <tr className="text-left">
-              <th className="px-3 py-3">Priority</th>
-              <th className="px-3 py-3">Name</th>
-              <th className="px-3 py-3">Phone</th>
-              <th className="px-3 py-3">Active</th>
-              <th className="px-3 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {reps.map((r) => (
-              <tr key={r.id} className="border-t border-white/5">
-                <td className="px-3 py-3 text-slate-200">{r.priority_order}</td>
-                <td className="px-3 py-3 text-white font-semibold">{r.name}</td>
-                <td className="px-3 py-3 text-slate-200">{r.phone}</td>
-                <td className="px-3 py-3">
-                  <button
-                    onClick={() => toggle(r)}
-                    className={`text-xs px-2 py-1 rounded-md border ${r.active ? "bg-green-500/15 text-green-300 border-green-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30"}`}
-                  >
-                    {r.active ? "Active" : "Disabled"}
-                  </button>
-                </td>
-                <td className="px-3 py-3 text-right">
-                  <button onClick={() => remove(r.id)} className="text-xs text-red-300 hover:text-red-200">
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {reps.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-10 text-slate-500">
-                  No reps yet — add one to enable warm transfer.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="rounded-2xl border border-white/5 bg-[#0F1626]">
+        <div className="p-3 border-b border-white/5 text-xs text-slate-400">
+          Drag rows to reorder priority, or use the ↑/↓ buttons. Position 1 is dialed first.
+        </div>
+        <ul>
+          {order.map((r, i) => (
+            <li
+              key={r.id}
+              draggable
+              onDragStart={() => onDragStart(r.id)}
+              onDragOver={(e) => onDragOver(e, r.id)}
+              onDrop={onDrop}
+              className={`flex items-center gap-3 px-3 py-3 border-t border-white/5 first:border-0 cursor-move ${dragId === r.id ? "opacity-50 bg-white/[0.03]" : "hover:bg-white/[0.02]"}`}
+            >
+              <span className="text-slate-500 select-none w-6">≡</span>
+              <span className="text-slate-200 w-6 text-center font-bold">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white truncate">{r.name}</p>
+                <p className="text-xs text-slate-400">{r.phone}</p>
+              </div>
+              <button
+                onClick={() => move(r.id, -1)}
+                disabled={busy || i === 0}
+                className="text-xs px-2 py-1 rounded-md border border-white/10 text-slate-300 hover:bg-white/5 disabled:opacity-30"
+              >↑</button>
+              <button
+                onClick={() => move(r.id, 1)}
+                disabled={busy || i === order.length - 1}
+                className="text-xs px-2 py-1 rounded-md border border-white/10 text-slate-300 hover:bg-white/5 disabled:opacity-30"
+              >↓</button>
+              <button
+                onClick={() => toggle(r)}
+                disabled={busy}
+                className={`text-xs px-2 py-1 rounded-md border ${r.active ? "bg-green-500/15 text-green-300 border-green-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30"}`}
+              >
+                {r.active ? "Active" : "Disabled"}
+              </button>
+              <button
+                onClick={() => remove(r.id)}
+                className="text-xs text-red-300 hover:text-red-200 px-2 py-1"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+          {order.length === 0 && (
+            <li className="text-center py-10 text-slate-500">
+              No reps yet — add one to enable warm transfer.
+            </li>
+          )}
+        </ul>
       </div>
     </div>
   );
