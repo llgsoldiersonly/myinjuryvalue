@@ -2,11 +2,23 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { MetaPixel } from "@/components/MetaPixel";
 
+function safeMetadataBase(): URL {
+  const fallback = new URL("https://myinjuryvalue.com");
+  const raw = process.env.PUBLIC_BASE_URL;
+  if (!raw) return fallback;
+  try {
+    return new URL(raw);
+  } catch {
+    console.warn(`Invalid PUBLIC_BASE_URL: ${raw} — falling back to ${fallback}`);
+    return fallback;
+  }
+}
+
 export const metadata: Metadata = {
   title: "MyInjuryValue.com — Find out what you should be paid",
   description:
     "Estimate your accident case value in minutes. The insurance company doesn't care about you. Find out what you should be paid.",
-  metadataBase: new URL(process.env.PUBLIC_BASE_URL || "https://myinjuryvalue.com"),
+  metadataBase: safeMetadataBase(),
   openGraph: {
     title: "MyInjuryValue.com — Find out what you should be paid",
     description:
