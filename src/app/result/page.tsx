@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { formatUsd } from "@/lib/scoring";
 import { BorderBeam } from "@/components/magicui/BorderBeam";
 import { NumberTicker } from "@/components/magicui/NumberTicker";
+import { ResultPixel } from "@/components/ResultPixel";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ export default async function ResultPage({
 
   return (
     <main className="min-h-screen bg-white">
+      <ResultPixel leadId={id} value={valueMax} leadQuality={String(lead.lead_quality ?? "")} />
       <header className="px-5 py-4 md:px-10 border-b border-slate-100">
         <div className="max-w-3xl mx-auto"><Logo size="md" /></div>
       </header>

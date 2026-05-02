@@ -31,6 +31,7 @@ export function Landing() {
           <Logo size="xl" />
           <Link
             href="/calculator"
+            onClick={() => fireFbq("InitiateCheckout", { content_name: "header_check_my_case_value" })}
             className="hidden md:inline-flex text-sm font-semibold text-brand-navy hover:text-brand-blue"
           >
             Check My Case Value →
@@ -63,7 +64,7 @@ export function Landing() {
           <div className="mt-8 flex justify-center">
             <Link
               href="/calculator"
-              onClick={() => fireFbq("ViewContent", { content_category: "calculator_start" })}
+              onClick={() => fireFbq("InitiateCheckout", { content_name: "hero_check_my_case_value" })}
             >
               <ShinyButton className="btn-yellow text-lg md:text-xl px-7 py-4">
                 Check My Case Value →
@@ -132,7 +133,7 @@ export function Landing() {
           <div className="mt-7 flex justify-center">
             <Link
               href="/calculator"
-              onClick={() => fireFbq("ViewContent", { content_category: "calculator_start_cta" })}
+              onClick={() => fireFbq("InitiateCheckout", { content_name: "final_start_my_free_estimate" })}
             >
               <ShinyButton className="btn-yellow text-lg md:text-xl px-7 py-4">
                 Start My Free Estimate →

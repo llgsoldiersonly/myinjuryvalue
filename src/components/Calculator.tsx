@@ -77,9 +77,6 @@ export function Calculator() {
     setSubmitting(true);
     setError(null);
 
-    fireFbq("Contact");
-    fireFbq("CompleteRegistration");
-
     const tracking = readClientTracking();
     const event_id = newEventId();
     fireFbq("Lead", { content_category: "case_calculator" }, event_id);

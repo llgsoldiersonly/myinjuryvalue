@@ -15,43 +15,55 @@ function normalizePhone(p?: string): string {
 
 export interface CapiResult { ok: boolean; error?: string; }
 
-export async function sendLeadCapi(
-  lead: LeadRow,
-  opts: { eventId: string; clientIp?: string; userAgent?: string }
-): Promise<CapiResult> {
+export interface CapiUserData {
+  email?: string;
+  phone?: string;
+  first_name?: string;
+  last_name?: string;
+  state?: string;
+  fbp?: string;
+  fbc?: string;
+  client_ip?: string;
+  user_agent?: string;
+}
+
+export interface CapiEventInput {
+  event_name: string;
+  event_id: string;
+  event_source_url?: string;
+  user_data?: CapiUserData;
+  custom_data?: Record<string, unknown>;
+}
+
+function hashUserData(u: CapiUserData = {}): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (u.email) out.em = sha256(u.email);
+  if (u.phone) out.ph = sha256(normalizePhone(u.phone));
+  if (u.first_name) out.fn = sha256(u.first_name);
+  if (u.last_name) out.ln = sha256(u.last_name);
+  if (u.state) out.st = sha256(u.state);
+  if (u.fbp) out.fbp = u.fbp;
+  if (u.fbc) out.fbc = u.fbc;
+  if (u.client_ip) out.client_ip_address = u.client_ip;
+  if (u.user_agent) out.client_user_agent = u.user_agent;
+  return out;
+}
+
+export async function sendCapiEvent(input: CapiEventInput): Promise<CapiResult> {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
   const token = process.env.META_ACCESS_TOKEN;
   if (!pixelId || !token) return { ok: false, error: "missing-meta-env" };
 
-  const userData: Record<string, string> = {};
-  if (lead.email) userData.em = sha256(lead.email);
-  if (lead.phone) userData.ph = sha256(normalizePhone(lead.phone));
-  if (lead.first_name) userData.fn = sha256(lead.first_name);
-  if (lead.last_name) userData.ln = sha256(lead.last_name);
-  if (lead.state) userData.st = sha256(lead.state);
-  if (lead.fbp) userData.fbp = lead.fbp;
-  if (lead.fbc) userData.fbc = lead.fbc;
-  if (opts.clientIp) userData.client_ip_address = opts.clientIp;
-  if (opts.userAgent) userData.client_user_agent = opts.userAgent;
-
   const payload: Record<string, unknown> = {
     data: [
       {
-        event_name: "Lead",
+        event_name: input.event_name,
         event_time: Math.floor(Date.now() / 1000),
-        event_id: opts.eventId,
+        event_id: input.event_id,
         action_source: "website",
-        event_source_url: lead.event_source_url ?? process.env.PUBLIC_BASE_URL,
-        user_data: userData,
-        custom_data: {
-          score: lead.score,
-          lead_quality: lead.lead_quality,
-          value: lead.value_max,
-          currency: "USD",
-          accident_type: lead.accident_type,
-          injury_level: lead.injury_level,
-          medical_treatment: lead.medical_treatment,
-        },
+        event_source_url: input.event_source_url ?? process.env.PUBLIC_BASE_URL,
+        user_data: hashUserData(input.user_data),
+        custom_data: input.custom_data ?? {},
       },
     ],
   };
@@ -76,4 +88,35 @@ export async function sendLeadCapi(
   } catch (e) {
     return { ok: false, error: String(e) };
   }
+}
+
+export async function sendLeadCapi(
+  lead: LeadRow,
+  opts: { eventId: string; clientIp?: string; userAgent?: string }
+): Promise<CapiResult> {
+  return sendCapiEvent({
+    event_name: "Lead",
+    event_id: opts.eventId,
+    event_source_url: lead.event_source_url ?? process.env.PUBLIC_BASE_URL,
+    user_data: {
+      email: lead.email,
+      phone: lead.phone,
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      state: lead.state,
+      fbp: lead.fbp,
+      fbc: lead.fbc,
+      client_ip: opts.clientIp,
+      user_agent: opts.userAgent,
+    },
+    custom_data: {
+      score: lead.score,
+      lead_quality: lead.lead_quality,
+      value: lead.value_max,
+      currency: "USD",
+      accident_type: lead.accident_type,
+      injury_level: lead.injury_level,
+      medical_treatment: lead.medical_treatment,
+    },
+  });
 }
