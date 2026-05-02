@@ -66,7 +66,7 @@ export function Tagline({ className = "" }: { className?: string }) {
   return (
     <p className={`leading-snug ${className}`}>
       <span className="text-brand-navy font-bold">
-        The insurance company doesn&apos;t care about you.
+        The Insurance company doesn&apos;t care about you.
       </span>{" "}
       <span className="text-brand-blue font-bold">
         Find out what you should be paid.

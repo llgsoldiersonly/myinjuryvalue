@@ -17,12 +17,12 @@ function safeMetadataBase(): URL {
 export const metadata: Metadata = {
   title: "MyInjuryValue.com — Find out what you should be paid",
   description:
-    "Estimate your accident case value in minutes. The insurance company doesn't care about you. Find out what you should be paid.",
+    "Estimate your accident case value in minutes. The Insurance company doesn't care about you. Find out what you should be paid.",
   metadataBase: safeMetadataBase(),
   openGraph: {
     title: "MyInjuryValue.com — Find out what you should be paid",
     description:
-      "The insurance company doesn't care about you. Find out what you should be paid.",
+      "The Insurance company doesn't care about you. Find out what you should be paid.",
     type: "website",
   },
 };

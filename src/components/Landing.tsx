@@ -51,7 +51,7 @@ export function Landing() {
             Car Accident Case Value Calculator
           </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-brand-navy">
-            The insurance company{" "}
+            The Insurance company{" "}
             <AnimatedGradientText className="font-extrabold">
               doesn&apos;t care about you.
             </AnimatedGradientText>
