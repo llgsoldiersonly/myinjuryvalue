@@ -60,12 +60,15 @@ export async function POST(req: NextRequest) {
       console.error("error dialing lead", e);
     }
 
-    // Park the rep in the conference until the lead joins.
+    // Park the rep in the conference until the lead joins. Conference is
+    // recorded; Twilio POSTs the recording URL to /api/twilio/conference-recording
+    // once it's ready. URL is relative so it works regardless of canonical host.
+    const recordingCb = `/api/twilio/conference-recording?lead_id=${encodeURIComponent(leadId)}`;
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna-Neural">Connecting you now. Please hold.</Say>
   <Dial>
-    <Conference startConferenceOnEnter="true" endConferenceOnExit="true" beep="false" waitUrl="">
+    <Conference startConferenceOnEnter="true" endConferenceOnExit="true" beep="false" waitUrl="" record="record-from-start" recordingStatusCallback="${recordingCb}" recordingStatusCallbackMethod="POST">
       ${escapeXml(conferenceName)}
     </Conference>
   </Dial>

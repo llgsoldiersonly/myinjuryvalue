@@ -57,7 +57,7 @@ export function LeadQueue({
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && applyFilters()}
           placeholder="Search name, phone, email…"
-          className="bg-[#0B1220] border border-white/10 text-sm rounded-lg px-3 py-2 w-72 text-slate-200"
+          className="bg-[#0B1220] border border-white/10 text-sm rounded-lg px-3 py-2 w-full sm:w-72 text-slate-200"
         />
         <select
           value={quality}
@@ -97,8 +97,50 @@ export function LeadQueue({
         <span className="ml-auto text-xs text-slate-500">{sorted.length} leads</span>
       </div>
 
-      {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-white/5">
+      {/* Mobile stacked cards */}
+      <div className="md:hidden mt-4 space-y-3">
+        {sorted.map((l) => (
+          <div key={l.id} className="bg-[#0F1626] border border-white/5 rounded-2xl p-4">
+            <div className="flex items-start justify-between gap-2">
+              <Link
+                href={`/dashboard/leads/${l.id}`}
+                className="font-bold text-white hover:text-brand-blueLight"
+              >
+                {l.first_name} {l.last_name}
+              </Link>
+              <QualityPill quality={l.lead_quality} />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {new Date(l.created_at).toLocaleString()} · {l.state}
+            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-3 text-xs">
+              <div><span className="text-slate-500">Phone:</span> <span className="text-slate-200">{l.phone}</span></div>
+              <div><span className="text-slate-500">Status:</span> <span className="text-slate-200">{l.status}</span></div>
+              <div className="col-span-2 truncate"><span className="text-slate-500">Accident:</span> <span className="text-slate-200">{l.accident_type}</span></div>
+              <div className="col-span-2 truncate"><span className="text-slate-500">Injury:</span> <span className="text-slate-200">{l.injury_level}</span></div>
+              <div className="col-span-2 truncate"><span className="text-slate-500">Treatment:</span> <span className="text-slate-200">{l.medical_treatment}</span></div>
+              <div><span className="text-slate-500">Fault:</span> <span className="text-slate-200">{l.fault}</span></div>
+              <div><span className="text-slate-500">Offer:</span> <span className="text-slate-200">{l.offer_amount || "—"}</span></div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <ActionButton onClick={() => callLead(l.id)}>📞 Call</ActionButton>
+              <ActionButton onClick={() => smsLead(l.id)}>SMS</ActionButton>
+              <Link
+                href={`/dashboard/leads/${l.id}`}
+                className="text-xs px-2 py-1 rounded-md border border-white/10 text-slate-300 hover:bg-white/5"
+              >
+                Details →
+              </Link>
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <p className="text-center py-10 text-slate-500">No leads match these filters.</p>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block mt-4 overflow-x-auto rounded-2xl border border-white/5">
         <table className="w-full text-sm">
           <thead className="bg-[#0F1626] text-slate-400">
             <tr className="text-left">

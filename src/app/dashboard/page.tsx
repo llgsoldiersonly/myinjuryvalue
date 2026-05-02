@@ -33,7 +33,7 @@ export default async function DashboardHome({
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <h1 className="text-2xl font-extrabold">Lead queue</h1>
       <p className="text-slate-400 text-sm mt-1">
         Sorted by priority, then newest first.

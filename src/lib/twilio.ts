@@ -121,6 +121,10 @@ export async function updateLatestCallAttempt(
 }
 
 export async function sendSms(to: string, body: string): Promise<string | null> {
+  if (process.env.DISABLE_SMS === "true") {
+    console.log(`[sms-disabled] skipped → ${to}: ${body.slice(0, 80)}…`);
+    return null;
+  }
   try {
     const msg = await twilioClient().messages.create({
       to,

@@ -21,7 +21,7 @@ export default async function LeadDetail({ params }: { params: { id: string } })
   const opener = buildOpener(l, "<your name>");
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-4 md:p-6 max-w-6xl">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-extrabold">
@@ -156,24 +156,39 @@ interface CallRow {
   intake_rep_phone: string | null;
   duration_seconds: number | null;
   failure_reason: string | null;
+  recording_url: string | null;
 }
 
 function Activity({ calls, createdAt }: { calls: CallRow[]; createdAt: string }) {
-  const items: { ts: string; text: string }[] = [];
+  const items: { ts: string; text: string; recording?: string | null }[] = [];
   items.push({ ts: createdAt, text: "Lead created" });
   for (const c of calls) {
     items.push({
       ts: c.created_at,
       text: `${c.status ?? "call"} (rep ${c.intake_rep_phone ?? "?"}${c.duration_seconds ? `, ${c.duration_seconds}s` : ""})${c.failure_reason ? ` — ${c.failure_reason}` : ""}`,
+      recording: c.recording_url,
     });
   }
   items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
   return (
-    <ul className="space-y-2 text-sm">
+    <ul className="space-y-3 text-sm">
       {items.map((it, i) => (
-        <li key={i} className="flex gap-3 text-slate-300">
-          <span className="text-slate-500 w-44 shrink-0">{new Date(it.ts).toLocaleString()}</span>
-          <span>{it.text}</span>
+        <li key={i} className="text-slate-300">
+          <div className="flex flex-col sm:flex-row sm:gap-3">
+            <span className="text-slate-500 sm:w-44 sm:shrink-0 text-xs sm:text-sm">
+              {new Date(it.ts).toLocaleString()}
+            </span>
+            <span>{it.text}</span>
+          </div>
+          {it.recording && (
+            <audio
+              controls
+              preload="none"
+              className="w-full max-w-md h-9 mt-2"
+            >
+              <source src={it.recording.endsWith(".mp3") ? it.recording : `${it.recording}.mp3`} type="audio/mpeg" />
+            </audio>
+          )}
         </li>
       ))}
     </ul>
