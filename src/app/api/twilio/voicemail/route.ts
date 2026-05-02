@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 // Played when the lead does not answer. Also sends the missed-call SMS and
 // triggers the backup follow-up email + intake-team SMS alert.
-export async function POST(req: NextRequest) {
+async function handle(req: NextRequest) {
   const url = new URL(req.url);
   const leadId = url.searchParams.get("lead_id");
   if (!leadId) return new NextResponse("missing lead_id", { status: 400 });
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
 </Response>`;
   return new NextResponse(twiml, { headers: { "Content-Type": "text/xml" } });
 }
+
+export const POST = handle;
+export const GET = handle;
 
 async function sendIntakeMissedCallAlert(lead: LeadRow | null) {
   if (!lead) return;

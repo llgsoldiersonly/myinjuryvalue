@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { buildLeadIntroScript, publicBaseUrl, updateLatestCallAttempt } from "@/lib/twilio";
+import { buildLeadIntroScript, updateLatestCallAttempt } from "@/lib/twilio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,8 +21,8 @@ async function handle(req: NextRequest) {
     .maybeSingle();
 
   const intro = buildLeadIntroScript(lead?.first_name ?? undefined);
-  const base = publicBaseUrl();
-  const vmUrl = `${base}/api/twilio/voicemail?lead_id=${encodeURIComponent(leadId)}`;
+  // Relative URL — Twilio resolves it against the host it called.
+  const vmUrl = `/api/twilio/voicemail?lead_id=${encodeURIComponent(leadId)}`;
 
   // If the call goes straight to voicemail, AnsweredBy is set on the call resource.
   // Twilio will follow the URL when answered; for a no-answer, the status webhook

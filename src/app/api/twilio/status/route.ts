@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 // Twilio status callback. Updates call_attempts with terminal state, and
 // rolls over to the backup intake rep on no-answer.
-export async function POST(req: NextRequest) {
+async function handle(req: NextRequest) {
   const url = new URL(req.url);
   const leadId = url.searchParams.get("lead_id");
   const leg = url.searchParams.get("leg") ?? "intake";
@@ -78,3 +78,6 @@ export async function POST(req: NextRequest) {
 
   return new NextResponse("ok");
 }
+
+export const POST = handle;
+export const GET = handle;

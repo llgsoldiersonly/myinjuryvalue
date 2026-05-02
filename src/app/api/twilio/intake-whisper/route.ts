@@ -28,8 +28,9 @@ async function handle(req: NextRequest) {
     ? buildWhisperScript(lead as LeadRow)
     : "New My Injury Value lead. Press 1 to connect, 2 to skip.";
 
-  const base = publicBaseUrl();
-  const action = `${base}/api/twilio/intake-gather?lead_id=${encodeURIComponent(leadId)}&rep_phone=${encodeURIComponent(repPhone)}`;
+  // Use a relative URL so Twilio resolves it against whichever host it called
+  // (avoids apex/www canonical-redirect mismatches).
+  const action = `/api/twilio/intake-gather?lead_id=${encodeURIComponent(leadId)}&rep_phone=${encodeURIComponent(repPhone)}`;
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
