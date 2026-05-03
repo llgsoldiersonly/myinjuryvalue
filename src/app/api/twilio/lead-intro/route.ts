@@ -30,7 +30,7 @@ async function handle(req: NextRequest) {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna-Neural">${escapeXml(intro)}</Say>
-  <Dial action="${vmUrl}" method="POST">
+  <Dial action="${escapeXml(vmUrl)}" method="POST">
     <Conference startConferenceOnEnter="true" endConferenceOnExit="true" beep="false">
       ${escapeXml(conference)}
     </Conference>

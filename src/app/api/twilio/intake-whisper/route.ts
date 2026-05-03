@@ -34,7 +34,7 @@ async function handle(req: NextRequest) {
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather numDigits="1" action="${action}" method="POST" timeout="8">
+  <Gather numDigits="1" action="${escapeXml(action)}" method="POST" timeout="8">
     <Say voice="Polly.Joanna-Neural">${escapeXml(script)}</Say>
   </Gather>
   <Say voice="Polly.Joanna-Neural">No input received. Goodbye.</Say>

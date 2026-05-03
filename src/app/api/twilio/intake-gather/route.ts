@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 <Response>
   <Say voice="Polly.Joanna-Neural">Connecting you now. Please hold.</Say>
   <Dial>
-    <Conference startConferenceOnEnter="true" endConferenceOnExit="true" beep="false" waitUrl="" record="record-from-start" recordingStatusCallback="${recordingCb}" recordingStatusCallbackMethod="POST">
+    <Conference startConferenceOnEnter="true" endConferenceOnExit="true" beep="false" waitUrl="" record="record-from-start" recordingStatusCallback="${escapeXml(recordingCb)}" recordingStatusCallbackMethod="POST">
       ${escapeXml(conferenceName)}
     </Conference>
   </Dial>
