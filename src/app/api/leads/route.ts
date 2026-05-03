@@ -58,9 +58,16 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;
   const ua = req.headers.get("user-agent") || undefined;
 
+  // Build the canonical base URL from the live request so Twilio always
+  // calls back to the same host the user submitted from. This sidesteps any
+  // apex<>www redirect mismatch in PUBLIC_BASE_URL.
+  const proto = (req.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
+  const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").split(",")[0].trim();
+  const baseUrl = host ? `${proto}://${host}` : undefined;
+
   void Promise.allSettled([
     event_id ? sendLeadCapi(fullLead, { eventId: event_id, clientIp: ip, userAgent: ua }) : Promise.resolve(),
-    startWarmTransfer(fullLead),
+    startWarmTransfer(fullLead, baseUrl),
     sendCaseValueEmail(fullLead),
     sendIntakeAlertEmail(fullLead),
     sendLeadConfirmationSms(fullLead),

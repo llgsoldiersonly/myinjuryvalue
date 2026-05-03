@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
 
   if (!lead) return NextResponse.json({ error: "not found" }, { status: 404 });
 
+  const proto = (req.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
+  const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").split(",")[0].trim();
+  const baseUrl = host ? `${proto}://${host}` : undefined;
+
   try {
-    await startWarmTransfer(lead as LeadRow);
+    await startWarmTransfer(lead as LeadRow, baseUrl);
   } catch (e) {
     console.error("call retry error", e);
     return NextResponse.json({ error: "twilio error" }, { status: 500 });

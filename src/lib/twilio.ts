@@ -33,7 +33,13 @@ export async function getNextIntakeRep(skipPhones: string[] = []): Promise<{ id:
 // Kicks off the warm-transfer flow by calling the primary intake rep first.
 // The whisper TwiML is served by /api/twilio/intake-whisper, which gathers DTMF
 // and (on press 1) bridges the lead via /api/twilio/lead-intro.
-export async function startWarmTransfer(lead: LeadRow): Promise<void> {
+//
+// `baseUrl` should be passed by the caller from the inbound request's host
+// (req.headers Host + x-forwarded-proto). Falling back to PUBLIC_BASE_URL is
+// fine for cron jobs / dashboard-triggered retries, but the form-submit path
+// passes the live request host so we never construct a URL pointing at a
+// canonical that redirects (which Twilio chokes on with 12100).
+export async function startWarmTransfer(lead: LeadRow, baseUrl?: string): Promise<void> {
   const sb = supabaseAdmin();
   const rep = await getNextIntakeRep();
   if (!rep) {
@@ -45,7 +51,7 @@ export async function startWarmTransfer(lead: LeadRow): Promise<void> {
     return;
   }
 
-  const base = publicBaseUrl();
+  const base = (baseUrl ?? publicBaseUrl()).replace(/\/$/, "");
   const from = process.env.TWILIO_PHONE_NUMBER!;
   const url = `${base}/api/twilio/intake-whisper?lead_id=${encodeURIComponent(lead.id)}&rep_phone=${encodeURIComponent(rep.phone)}`;
   const statusCallback = `${base}/api/twilio/status?lead_id=${encodeURIComponent(lead.id)}&leg=intake&rep_phone=${encodeURIComponent(rep.phone)}`;

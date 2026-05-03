@@ -50,7 +50,10 @@ async function handle(req: NextRequest) {
   if (leg === "intake" && (callStatus === "no-answer" || callStatus === "busy" || callStatus === "failed")) {
     const backup = await getNextIntakeRep([repPhone]);
     if (backup) {
-      const base = publicBaseUrl();
+      // Reuse the host Twilio just called us on so the rollover URL matches.
+      const proto = (req.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
+      const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").split(",")[0].trim();
+      const base = host ? `${proto}://${host}` : publicBaseUrl();
       const whisperUrl = `${base}/api/twilio/intake-whisper?lead_id=${encodeURIComponent(leadId)}&rep_phone=${encodeURIComponent(backup.phone)}`;
       const statusCb = `${base}/api/twilio/status?lead_id=${encodeURIComponent(leadId)}&leg=intake&rep_phone=${encodeURIComponent(backup.phone)}`;
       try {

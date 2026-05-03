@@ -82,10 +82,12 @@ export async function POST(req: NextRequest) {
     failure_reason: `intake_skipped:${repPhone}`,
   });
 
-  // Kick off backup
+  // Kick off backup — use the host Twilio just called us on.
   const backup = await getNextIntakeRep([repPhone]);
   if (backup) {
-    const base = publicBaseUrl();
+    const proto = (req.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
+    const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").split(",")[0].trim();
+    const base = host ? `${proto}://${host}` : publicBaseUrl();
     const url2 = `${base}/api/twilio/intake-whisper?lead_id=${encodeURIComponent(leadId)}&rep_phone=${encodeURIComponent(backup.phone)}`;
     const statusCb = `${base}/api/twilio/status?lead_id=${encodeURIComponent(leadId)}&leg=intake&rep_phone=${encodeURIComponent(backup.phone)}`;
     try {
