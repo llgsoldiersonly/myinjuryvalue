@@ -11,6 +11,14 @@ export function supabaseAdmin(): SupabaseClient {
   }
   _admin = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    // Bypass Next.js's fetch data cache so server-rendered dashboard pages
+    // always see the freshest rows. Without this, supabase-js fetches get
+    // memoized by the framework and recently-inserted rows can stay invisible
+    // for tens of seconds even though they're persisted in the DB.
+    global: {
+      fetch: (input, init) =>
+        fetch(input as RequestInfo, { ...(init ?? {}), cache: "no-store" }),
+    },
   });
   return _admin;
 }
