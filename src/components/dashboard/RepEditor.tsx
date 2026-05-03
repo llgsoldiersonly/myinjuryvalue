@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface Rep {
   id: string;
@@ -14,17 +13,16 @@ interface Rep {
 }
 
 export function RepEditor({ reps }: { reps: Rep[] }) {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  // Initialize order from props once. After mount, `order` is the source of
+  // truth so optimistic updates never get overwritten by a stale router.refresh.
+  const [order, setOrder] = useState<Rep[]>(() =>
+    [...reps].sort((a, b) => a.priority_order - b.priority_order)
+  );
   const [priority, setPriority] = useState(reps.length + 1);
-  const [order, setOrder] = useState<Rep[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setOrder([...reps].sort((a, b) => a.priority_order - b.priority_order));
-  }, [reps]);
 
   async function add() {
     if (!name.trim() || !phone.trim()) return;
@@ -54,7 +52,6 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
     setName("");
     setPhone("");
     setPriority((p) => p + 1);
-    router.refresh();
   }
 
   async function remove(id: string) {
@@ -62,8 +59,8 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
     setBusy(true);
     const res = await fetch(`/api/dashboard/reps?id=${id}`, { method: "DELETE" });
     setBusy(false);
-    if (!res.ok) alert(await res.text());
-    else router.refresh();
+    if (!res.ok) { alert(`Failed to remove (${res.status}): ${await res.text()}`); return; }
+    setOrder((cur) => cur.filter((r) => r.id !== id));
   }
 
   async function toggle(rep: Rep) {
@@ -74,8 +71,8 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
       body: JSON.stringify({ id: rep.id, active: !rep.active }),
     });
     setBusy(false);
-    if (!res.ok) alert(await res.text());
-    else router.refresh();
+    if (!res.ok) { alert(`Failed to toggle (${res.status}): ${await res.text()}`); return; }
+    setOrder((cur) => cur.map((r) => (r.id === rep.id ? { ...r, active: !rep.active } : r)));
   }
 
   async function persistOrder(next: Rep[]) {
@@ -94,7 +91,7 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
           })
         )
       );
-      router.refresh();
+      // local order state is already correct; no router.refresh needed
     } finally {
       setBusy(false);
     }
