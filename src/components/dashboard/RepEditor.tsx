@@ -29,14 +29,32 @@ export function RepEditor({ reps }: { reps: Rep[] }) {
   async function add() {
     if (!name.trim() || !phone.trim()) return;
     setBusy(true);
-    const res = await fetch("/api/dashboard/reps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, priority_order: priority, active: true }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/dashboard/reps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, priority_order: priority, active: true }),
+      });
+    } catch (e) {
+      setBusy(false);
+      alert(`Network error: ${e instanceof Error ? e.message : String(e)}`);
+      return;
+    }
     setBusy(false);
-    if (!res.ok) alert(await res.text());
-    else { setName(""); setPhone(""); router.refresh(); }
+    if (!res.ok) {
+      alert(`Failed to add rep (${res.status}): ${await res.text()}`);
+      return;
+    }
+    const json = await res.json().catch(() => ({}));
+    const newRep = json.rep as Rep | undefined;
+    if (newRep) {
+      setOrder((cur) => [...cur, newRep].sort((a, b) => a.priority_order - b.priority_order));
+    }
+    setName("");
+    setPhone("");
+    setPriority((p) => p + 1);
+    router.refresh();
   }
 
   async function remove(id: string) {

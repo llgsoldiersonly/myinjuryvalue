@@ -8,9 +8,13 @@ export async function POST(req: NextRequest) {
   const { name, phone, priority_order, active } = body;
   if (!name || !phone) return NextResponse.json({ error: "missing" }, { status: 400 });
   const sb = supabaseAdmin();
-  const { error } = await sb.from("intake_reps").insert({ name, phone, priority_order, active });
+  const { data, error } = await sb
+    .from("intake_reps")
+    .insert({ name, phone, priority_order, active })
+    .select("*")
+    .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, rep: data });
 }
 
 export async function PATCH(req: NextRequest) {
