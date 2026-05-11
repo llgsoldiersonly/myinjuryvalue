@@ -126,20 +126,6 @@ export async function updateLatestCallAttempt(
   await sb.from("call_attempts").update(patch).eq("id", data.id);
 }
 
-export async function sendSms(to: string, body: string): Promise<string | null> {
-  if (process.env.DISABLE_SMS === "true") {
-    console.log(`[sms-disabled] skipped → ${to}: ${body.slice(0, 80)}…`);
-    return null;
-  }
-  try {
-    const msg = await twilioClient().messages.create({
-      to,
-      from: process.env.TWILIO_PHONE_NUMBER!,
-      body,
-    });
-    return msg.sid;
-  } catch (e) {
-    console.error("twilio sms error", e);
-    return null;
-  }
-}
+// SMS is delegated to textbee.dev — see src/lib/sms.ts. Re-export so existing
+// `import { sendSms } from "@/lib/twilio"` call sites keep working.
+export { sendSms } from "./sms";
